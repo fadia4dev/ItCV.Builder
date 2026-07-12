@@ -335,7 +335,7 @@ const isPhoneValid = (phone) => /^\d{10,}$/.test(phone || "");
 // ---------- Google Sheet logging (optional) ----------
 // استبدلي القيمة أدناه برابط تطبيق الويب (Apps Script) الخاص بك بعد نشره — راجعي التعليمات المرفقة.
 // إن تُركت كما هي، لن يحاول التطبيق الإرسال، وستعمل الأداة بشكل طبيعي دون تسجيل أي بيانات.
-const SHEET_WEBHOOK_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+const SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyzhbqJoyHHb92RPNtexkuIquC4BMIl9XsEbru8GfdP-Tq9MxXYgktTCyMYPM07i_8h/exec";
 
 function sendToSheet(data) {
   if (!SHEET_WEBHOOK_URL || SHEET_WEBHOOK_URL.indexOf("PASTE_") === 0) return;
