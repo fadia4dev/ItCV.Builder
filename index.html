@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>بناء السيرة الذاتية / CV Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  body { font-family: 'Noto Sans Arabic', 'Arial', sans-serif; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/plain" id="app-source">
+const { useState, useRef } = React;
+
+
+// ---------- i18n dictionary ----------
+
+const STR = {
+  ar: {
+    dir: "rtl",
+    appTitle: "بناء السيرة الذاتية",
+    appSubtitle: "جمعية البر بجدة - أداة مبسطة لكتابة سيرة ذاتية احترافية",
+    requiredTag: "(مطلوب)",
+    statusHeading: "الحالة الوظيفية الحالية",
+    statusSubtitle: "يُحدَّد ما ينطبق من الحالات التالية، ليتم تخصيص الأسئلة والإرشادات وفقًا لذلك.",
+    privacyNotice: "بتعبئة هذا النموذج، تُحفظ البيانات المُدخلة (كالاسم وبيانات التواصل) ضمن سجلات جمعية البر بجدة لأغراض المتابعة والتواصل مع المستفيدين. لا تُشارك هذه البيانات مع أي جهة خارج الجمعية.",
+    statuses: [
+      { id: "experienced", label: "صاحب خبرة", desc: "سنة عمل واحدة أو أكثر" },
+      { id: "graduate", label: "خريج جديد", desc: "بدون خبرة عمل رسمية" },
+    ],
+    next: "التالي ←",
+    back: "← السابق",
+    preview: "معاينة السيرة الذاتية",
+    backToEdit: "← رجوع للتعديل",
+    downloadPdf: "تحميل كـ PDF",
+    printHint: 'عند الضغط على "تحميل كـ PDF" ستفتح نافذة الطباعة — يُختار "حفظ كـ PDF" (Save as PDF) من قائمة الطابعة.',
+
+    contactTitle: "البيانات الشخصية",
+    fullNameLabel: "الاسم الكامل",
+    fullNameTip: "الاسم الكامل كما يظهر في الوثائق الرسمية.",
+    jobTitleLabel: "المسمى الوظيفي المستهدف",
+    jobTitleTip: "المسمى الوظيفي المستهدف. مثال: مدير مشتريات",
+    phoneLabel: "رقم الجوال",
+    phoneTip: "أرقام فقط، بحد أدنى ١٠ أرقام.",
+    phoneError: "رقم الجوال يجب أن يتكوّن من أرقام فقط، بحد أدنى ١٠ أرقام.",
+    emailLabel: "البريد الإلكتروني",
+    emailTip: "بريد مهني بسيط (الاسم فقط).",
+    cityLabel: "المدينة",
+    cityTip: "المدينة الحالية، أو المدينة المستهدفة للعمل فيها.",
+    linkedinLabel: "LinkedIn",
+    linkedinTip: "رابط الملف الشخصي إن وُجد (اختياري).",
+    fillRequiredAlert: "يرجى تعبئة جميع الحقول المطلوبة قبل المتابعة.",
+
+    summaryTitle: "الملخص المهني",
+    summaryTitleGraduate: "الهدف الوظيفي",
+    summarySubtitle: "أول ما يقرأه المسؤول عن التوظيف — يُفضّل أن يكون مختصرًا ومحددًا.",
+    summaryLabel: "نبذة",
+    summaryTipExperienced:
+      "بجملتين إلى ثلاث: التعريف المهني، وأبرز خبرة، وما يُقدَّم للوظيفة المستهدفة.",
+    summaryTipGraduate: "بجملتين: التخصص، وأبرز مهارة أو مشروع أو تدريب يعكس الجاهزية لسوق العمل.",
+
+    experienceTitleDefault: "الخبرات العملية",
+    experienceTitleGraduate: "الخبرة العملية (تدريب أو عمل جزئي)",
+    experienceSubtitleDefault: "تُرتَّب الخبرات من الأحدث إلى الأقدم.",
+    experienceSubtitleGraduate: "إن لم تتوفر خبرة رسمية، يمكن تخطي هذا القسم والانتقال مباشرة.",
+    expTitleLabel: "المسمى الوظيفي",
+    expTitleTip: "المسمى الوظيفي كما ورد رسميًا في العقد.",
+    expCompanyLabel: "جهة العمل",
+    fromLabel: "من",
+    toLabel: "إلى",
+    dateTip: "يُكتب الشهر والسنة فقط. مثال: يناير ٢٠٢٢",
+    currentLabel: "حتى الآن",
+    currentCheckbox: "عمل حالي",
+    bulletsLabel: "أبرز المهام والإنجازات",
+    bulletsTip: "من ٣ إلى ٥ نقاط، كل نقطة تبدأ بفعل إجراء وتنتهي إن أمكن برقم أو نتيجة. عند كتابة الفقرات، تُكتب كل فقرة في سطر مستقل، وتبدأ بتعداد نقطي أو شرطة. مثال:\n- خفض زمن معالجة الطلبات بنسبة ٢٠٪\n- قاد فريقًا من ٤ موظفين",
+    addExperience: "إضافة خبرة أخرى",
+
+    educationTitle: "المؤهل العلمي",
+    degreeLabel: "الدرجة والتخصص",
+    degreeTip: "مثال: بكالوريوس إدارة أعمال",
+    schoolLabel: "الجامعة / المعهد",
+    schoolTip: "اسم الجامعة أو المعهد كاملاً وواضحًا، دون اختصارات غير معروفة.",
+    eduYearLabel: "سنة التخرج",
+    eduYearTip: "السنة بصيغة رقمية كاملة. مثال: ٢٠٢٣",
+    eduNotesLabel: "ملاحظات (اختياري)",
+    addEducation: "إضافة مؤهل آخر",
+
+    skillsTitle: "المهارات واللغات",
+    skillsLabel: "المهارات",
+    skillsTip: "تُفصل المهارات بفواصل. يُفضّل ذكر مهارات محددة وقابلة للقياس بدلاً من صفات عامة.",
+    languagesLabel: "اللغات",
+    languagesTip: "اللغة ومستوى الإجادة. مثال: العربية (اللغة الأم)، الإنجليزية (متقدم)",
+
+    coursesTitle: "الدورات والشهادات",
+    coursesSubtitle: "اختياري — يمكن تخطي هذا القسم إن لم ينطبق.",
+    courseNameLabel: "اسم الدورة",
+    courseOrgLabel: "الجهة المانحة",
+    courseYearLabel: "السنة",
+    addCourse: "إضافة دورة أخرى",
+
+    certificationsTitle: "التصنيف المهني",
+    certificationsSubtitle: "اختياري — للتصنيفات أو التراخيص المهنية الرسمية إن وُجدت (مثل تصنيف مهني معتمد من جهة حكومية أو مهنية).",
+    certificationNameLabel: "اسم التصنيف / الترخيص",
+    certificationOrgLabel: "الجهة المانحة",
+    certificationNumberLabel: "رقم التصنيف (اختياري)",
+    certificationYearLabel: "السنة",
+    addCertification: "إضافة تصنيف آخر",
+
+    projectsTitle: "المشاريع",
+    projectsSubtitle: "اختياري — مفيد بشكل خاص للخريجين الجدد وأصحاب الأعمال الحرة.",
+    projectNameLabel: "اسم المشروع",
+    projectDescLabel: "الوصف",
+    addProject: "إضافة مشروع آخر",
+
+    achievementsTitle: "الإنجازات",
+    achievementsSubtitle: "اختياري — إنجاز أو تكريم يستحق الذكر.",
+    achievementsLabel: "وصف الإنجاز",
+
+    extraTitle: "سؤالان أخيران",
+    extraSubtitle: "هذان السؤالان لأغراض التنظيم الداخلي للجمعية فقط، ولن يظهرا في السيرة الذاتية.",
+    beneficiaryQuestion: "هل أنت من مستفيدي جمعية البر؟",
+    beneficiaryYes: "نعم",
+    beneficiaryNo: "لا",
+    referralQuestion: "من أين عرفت عن هذه الأداة / الرابط؟",
+    referralOptions: [
+      { id: "social", label: "منصات التواصل الاجتماعي" },
+      { id: "charity_staff", label: "عبر فريق عمل الجمعية مباشرة" },
+      { id: "friend", label: "توصية من صديق أو معارف" },
+      { id: "website", label: "الموقع الرسمي للجمعية" },
+      { id: "other", label: "أخرى" },
+    ],
+    referralOtherLabel: "يرجى التحديد",
+
+    r_summary: "الملخص المهني",
+    r_summaryGraduate: "الهدف الوظيفي",
+    r_experience: "الخبرات العملية",
+    r_education: "المؤهل العلمي",
+    r_skills: "المهارات",
+    r_languages: "اللغات",
+    r_courses: "الدورات والشهادات",
+    r_certifications: "التصنيف المهني",
+    r_projects: "المشاريع",
+    r_achievements: "إنجازات",
+    r_namePlaceholder: "الاسم الكامل",
+    r_titlePlaceholder: "المسمى الوظيفي",
+    r_phoneLabel: "رقم التواصل",
+    r_emailLabel: "البريد الإلكتروني",
+    r_cityLabel: "المدينة",
+    r_linkedinLabel: "LinkedIn",
+  },
+
+  en: {
+    dir: "ltr",
+    appTitle: "CV Builder",
+    appSubtitle: "Al-Birr Charitable Society, Jeddah - a simplified tool for writing a professional CV",
+    requiredTag: "(required)",
+    statusHeading: "Current employment status",
+    statusSubtitle: "Select what applies — the questions and guidance will adjust accordingly.",
+    privacyNotice: "By filling out this form, the information you enter (such as your name and contact details) is saved in the records of Al-Birr Charitable Society, Jeddah, for the purpose of following up and communicating with beneficiaries. This data is not shared with any party outside the charity.",
+    statuses: [
+      { id: "experienced", label: "Experienced", desc: "One year of work experience or more" },
+      { id: "graduate", label: "Recent graduate", desc: "No formal work experience" },
+    ],
+    next: "Next →",
+    back: "← Back",
+    preview: "Preview CV",
+    backToEdit: "← Back to edit",
+    downloadPdf: "Download as PDF",
+    printHint: 'Clicking "Download as PDF" opens the print dialog — choose "Save as PDF" from the printer list.',
+
+    contactTitle: "Personal information",
+    fullNameLabel: "Full name",
+    fullNameTip: "Full name as it appears on official documents.",
+    jobTitleLabel: "Target job title",
+    jobTitleTip: "The job title being targeted. Example: Procurement Manager",
+    phoneLabel: "Phone number",
+    phoneTip: "Digits only, minimum 10 digits.",
+    phoneError: "Phone number must contain digits only, with a minimum of 10 digits.",
+    emailLabel: "Email",
+    emailTip: "A simple professional email (name only).",
+    cityLabel: "City",
+    cityTip: "Current city, or the city targeted for work.",
+    linkedinLabel: "LinkedIn",
+    linkedinTip: "Link to LinkedIn profile if available (optional).",
+    fillRequiredAlert: "Please fill in all required fields before continuing.",
+
+    summaryTitle: "Professional summary",
+    summaryTitleGraduate: "Career Objective",
+    summarySubtitle: "The first thing a recruiter reads — keep it short and specific.",
+    summaryLabel: "Summary",
+    summaryTipExperienced:
+      "Two to three sentences: professional identity, key experience, and value offered for the target role.",
+    summaryTipGraduate: "Two sentences: field of study, and a key skill, project, or training that shows readiness.",
+
+    experienceTitleDefault: "Work experience",
+    experienceTitleGraduate: "Work experience (internship or part-time)",
+    experienceSubtitleDefault: "List experience from most recent to oldest.",
+    experienceSubtitleGraduate: "If there's no formal experience, this section can be skipped.",
+    expTitleLabel: "Job title",
+    expTitleTip: "The official job title as stated in the contract.",
+    expCompanyLabel: "Company",
+    fromLabel: "From",
+    toLabel: "To",
+    dateTip: "Enter month and year only. Example: January 2022",
+    currentLabel: "Present",
+    currentCheckbox: "Currently working here",
+    bulletsLabel: "Key responsibilities and achievements",
+    bulletsTip: "3 to 5 bullet points, each starting with an action verb and ending with a number or result where possible. Write each point on its own line, starting with a bullet or dash. Example:\n- Reduced order processing time by 20%\n- Led a team of 4 staff members",
+    addExperience: "Add another experience",
+
+    educationTitle: "Education",
+    degreeLabel: "Degree and major",
+    degreeTip: "Example: Bachelor's in Business Administration",
+    schoolLabel: "University / Institute",
+    schoolTip: "Full, clear name of the university or institute — avoid unfamiliar abbreviations.",
+    eduYearLabel: "Graduation year",
+    eduYearTip: "Full numeric year. Example: 2023",
+    eduNotesLabel: "Notes (optional)",
+    addEducation: "Add another qualification",
+
+    skillsTitle: "Skills and languages",
+    skillsLabel: "Skills",
+    skillsTip: "Separate skills with commas. Prefer specific, measurable skills over generic traits.",
+    languagesLabel: "Languages",
+    languagesTip: "Language and proficiency level. Example: Arabic (native), English (advanced)",
+
+    coursesTitle: "Courses and certificates",
+    coursesSubtitle: "Optional — this section can be skipped if not applicable.",
+    courseNameLabel: "Course name",
+    courseOrgLabel: "Issuing organization",
+    courseYearLabel: "Year",
+    addCourse: "Add another course",
+
+    certificationsTitle: "Professional Certification",
+    certificationsSubtitle: "Optional — for official professional certifications or licenses, if any (e.g. a certification accredited by a government or professional body).",
+    certificationNameLabel: "Certification / license name",
+    certificationOrgLabel: "Issuing organization",
+    certificationNumberLabel: "Certification number (optional)",
+    certificationYearLabel: "Year",
+    addCertification: "Add another certification",
+
+    projectsTitle: "Projects",
+    projectsSubtitle: "Optional — especially useful for recent graduates and freelancers.",
+    projectNameLabel: "Project name",
+    projectDescLabel: "Description",
+    addProject: "Add another project",
+
+    achievementsTitle: "Achievements",
+    achievementsSubtitle: "Optional — an achievement or award worth mentioning.",
+    achievementsLabel: "Achievement description",
+
+    extraTitle: "Two last questions",
+    extraSubtitle: "These two questions are for the charity's internal record-keeping only, and will not appear on the CV.",
+    beneficiaryQuestion: "Are you a beneficiary of Al-Birr Charitable Society?",
+    beneficiaryYes: "Yes",
+    beneficiaryNo: "No",
+    referralQuestion: "How did you hear about this tool / link?",
+    referralOptions: [
+      { id: "social", label: "Social media" },
+      { id: "charity_staff", label: "Directly from the charity's staff" },
+      { id: "friend", label: "Referral from a friend or acquaintance" },
+      { id: "website", label: "The charity's official website" },
+      { id: "other", label: "Other" },
+    ],
+    referralOtherLabel: "Please specify",
+
+    r_summary: "Professional Summary",
+    r_summaryGraduate: "Career Objective",
+    r_experience: "Work Experience",
+    r_education: "Education",
+    r_skills: "Skills",
+    r_languages: "Languages",
+    r_courses: "Courses & Certificates",
+    r_certifications: "Professional Certification",
+    r_projects: "Projects",
+    r_achievements: "Achievements",
+    r_namePlaceholder: "Full name",
+    r_titlePlaceholder: "Job title",
+    r_phoneLabel: "Phone",
+    r_emailLabel: "Email",
+    r_cityLabel: "City",
+    r_linkedinLabel: "LinkedIn",
+  },
+};
+
+// ---------- Data ----------
+
+const emptyExperience = () => ({
+  id: crypto.randomUUID(),
+  title: "",
+  company: "",
+  start: "",
+  end: "",
+  current: false,
+  bullets: "",
+});
+
+const emptyEducation = () => ({ id: crypto.randomUUID(), degree: "", school: "", year: "", notes: "" });
+const emptyProject = () => ({ id: crypto.randomUUID(), name: "", desc: "" });
+const emptyCourse = () => ({ id: crypto.randomUUID(), name: "", org: "", year: "" });
+const emptyCertification = () => ({ id: crypto.randomUUID(), name: "", org: "", number: "", year: "" });
+
+function initialData() {
+  return {
+    status: "",
+    fullName: "",
+    jobTitle: "",
+    phone: "",
+    email: "",
+    city: "",
+    linkedin: "",
+    summary: "",
+    experiences: [emptyExperience()],
+    education: [emptyEducation()],
+    skills: "",
+    languages: "",
+    courses: [emptyCourse()],
+    certifications: [emptyCertification()],
+    projects: [emptyProject()],
+    achievements: "",
+    isBeneficiary: "",
+    referralSource: "",
+    referralOther: "",
+  };
+}
+
+const isPhoneValid = (phone) => /^\d{10,}$/.test(phone || "");
+
+// ---------- Google Sheet logging (optional) ----------
+// استبدلي القيمة أدناه برابط تطبيق الويب (Apps Script) الخاص بك بعد نشره — راجعي التعليمات المرفقة.
+// إن تُركت كما هي، لن يحاول التطبيق الإرسال، وستعمل الأداة بشكل طبيعي دون تسجيل أي بيانات.
+const SHEET_WEBHOOK_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+function sendToSheet(data) {
+  if (!SHEET_WEBHOOK_URL || SHEET_WEBHOOK_URL.indexOf("PASTE_") === 0) return;
+  try {
+    fetch(SHEET_WEBHOOK_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        timestamp: new Date().toISOString(),
+        fullName: data.fullName,
+        phone: data.phone,
+        email: data.email,
+        city: data.city,
+        status: data.status,
+        jobTitle: data.jobTitle,
+        specialization: (data.education && data.education[0] && data.education[0].degree) || "",
+        isBeneficiary: data.isBeneficiary,
+        referralSource: data.referralSource === "other" ? data.referralOther : data.referralSource,
+      }),
+    }).catch(function () {});
+  } catch (e) {
+    // لا يُوقف هذا أبدًا تحميل السيرة الذاتية للمستخدم، حتى لو فشل الإرسال
+  }
+}
+
+// ---------- Small UI atoms ----------
+
+function Field({ label, tip, children, required }) {
+  return (
+    <div className="mb-5">
+      <label className="block text-sm font-semibold text-neutral-900 mb-1">
+        {label} {required && <span className="text-neutral-400 font-normal">*</span>}
+      </label>
+      {children}
+      {tip && <p className="mt-1 text-xs leading-relaxed text-neutral-500 whitespace-pre-line">{tip}</p>}
+    </div>
+  );
+}
+
+function TextInput({ lang, ...props }) {
+  return (
+    <input
+      spellCheck={true}
+      lang={lang}
+      {...props}
+      className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-neutral-800 transition"
+    />
+  );
+}
+
+function TextArea({ lang, ...props }) {
+  return (
+    <textarea
+      spellCheck={true}
+      lang={lang}
+      {...props}
+      className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-neutral-800 transition resize-y"
+    />
+  );
+}
+
+function SectionCard({ title, subtitle, children }) {
+  return (
+    <div className="mb-8">
+      <h2 className="text-lg font-bold text-neutral-900">{title}</h2>
+      {subtitle && <p className="text-sm text-neutral-500 mb-4">{subtitle}</p>}
+      {!subtitle && <div className="mb-4" />}
+      {children}
+    </div>
+  );
+}
+
+function RemovableRow({ onRemove, children, canRemove }) {
+  return (
+    <div className="relative border border-neutral-200 rounded-lg p-4 mb-3 bg-neutral-50">
+      {canRemove && (
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label="remove"
+          className="absolute top-3 left-3 text-neutral-400 hover:text-red-600 text-xs font-semibold"
+        >
+          ✕
+        </button>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function AddButton({ onClick, label }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-sm font-semibold text-neutral-800 border border-neutral-300 rounded-md px-3 py-1.5 hover:bg-neutral-100 transition"
+    >
+      + {label}
+    </button>
+  );
+}
+
+// ---------- Steps ----------
+
+function StepStatus({ data, setData, s, onNext }) {
+  return (
+    <div>
+      <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-3 mb-5">
+        <p className="text-xs leading-relaxed text-neutral-600">{s.privacyNotice}</p>
+      </div>
+      <h2 className="text-xl font-bold text-neutral-900 mb-2">{s.statusHeading}</h2>
+      <p className="text-sm text-neutral-500 mb-6">{s.statusSubtitle}</p>
+      <div className="grid grid-cols-1 gap-3">
+        {s.statuses.map((st) => (
+          <button
+            key={st.id}
+            type="button"
+            onClick={() => setData({ ...data, status: st.id })}
+            className={`text-start border rounded-lg p-4 transition ${
+              data.status === st.id ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-300 hover:border-neutral-500"
+            }`}
+          >
+            <div className="font-bold">{st.label}</div>
+            <div className={`text-xs mt-1 ${data.status === st.id ? "text-neutral-300" : "text-neutral-500"}`}>{st.desc}</div>
+          </button>
+        ))}
+      </div>
+      <div className="mt-8 flex justify-end">
+        <button
+          disabled={!data.status}
+          onClick={onNext}
+          className="bg-neutral-900 text-white text-sm font-semibold px-5 py-2.5 rounded-md disabled:opacity-30 disabled:cursor-not-allowed hover:bg-neutral-700 transition"
+        >
+          {s.next}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StepContact({ data, setData, s, lang }) {
+  const phoneTouched = data.phone.length > 0;
+  const phoneOk = isPhoneValid(data.phone);
+  return (
+    <SectionCard title={s.contactTitle}>
+      <Field label={s.fullNameLabel} tip={s.fullNameTip} required>
+        <TextInput lang={lang} value={data.fullName} onChange={(e) => setData({ ...data, fullName: e.target.value })} />
+      </Field>
+      <Field label={s.jobTitleLabel} tip={s.jobTitleTip} required>
+        <TextInput lang={lang} value={data.jobTitle} onChange={(e) => setData({ ...data, jobTitle: e.target.value })} />
+      </Field>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label={s.phoneLabel} tip={s.phoneTip} required>
+          <TextInput
+            lang={lang}
+            type="tel"
+            inputMode="numeric"
+            value={data.phone}
+            onChange={(e) => setData({ ...data, phone: e.target.value.replace(/[^0-9]/g, "") })}
+            dir="ltr"
+          />
+          {phoneTouched && !phoneOk && <p className="mt-1 text-xs text-red-600">{s.phoneError}</p>}
+        </Field>
+        <Field label={s.emailLabel} tip={s.emailTip} required>
+          <TextInput lang={lang} type="email" value={data.email} onChange={(e) => setData({ ...data, email: e.target.value })} dir="ltr" />
+        </Field>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label={s.cityLabel} tip={s.cityTip}>
+          <TextInput lang={lang} value={data.city} onChange={(e) => setData({ ...data, city: e.target.value })} />
+        </Field>
+        <Field label={s.linkedinLabel} tip={s.linkedinTip}>
+          <TextInput lang={lang} value={data.linkedin} onChange={(e) => setData({ ...data, linkedin: e.target.value })} dir="ltr" />
+        </Field>
+      </div>
+    </SectionCard>
+  );
+}
+
+function StepSummary({ data, setData, s, lang }) {
+  const isGraduate = data.status === "graduate";
+  const title = isGraduate ? s.summaryTitleGraduate : s.summaryTitle;
+  const tip = isGraduate ? s.summaryTipGraduate : s.summaryTipExperienced;
+  return (
+    <SectionCard title={title} subtitle={s.summarySubtitle}>
+      <Field label={s.summaryLabel} tip={tip} required>
+        <TextArea lang={lang} rows={4} value={data.summary} onChange={(e) => setData({ ...data, summary: e.target.value })} />
+      </Field>
+    </SectionCard>
+  );
+}
+
+function StepExperience({ data, setData, s, lang }) {
+  const update = (id, patch) => setData({ ...data, experiences: data.experiences.map((x) => (x.id === id ? { ...x, ...patch } : x)) });
+  const add = () => setData({ ...data, experiences: [...data.experiences, emptyExperience()] });
+  const remove = (id) => setData({ ...data, experiences: data.experiences.filter((x) => x.id !== id) });
+  const title = data.status === "graduate" ? s.experienceTitleGraduate : s.experienceTitleDefault;
+  const subtitle = data.status === "graduate" ? s.experienceSubtitleGraduate : s.experienceSubtitleDefault;
+
+  return (
+    <SectionCard title={title} subtitle={subtitle}>
+      {data.experiences.map((exp, i) => (
+        <RemovableRow key={exp.id} onRemove={() => remove(exp.id)} canRemove={data.experiences.length > 1}>
+          <Field label={`${s.expTitleLabel} #${i + 1}`} tip={s.expTitleTip}>
+            <TextInput lang={lang} value={exp.title} onChange={(e) => update(exp.id, { title: e.target.value })} />
+          </Field>
+          <Field label={s.expCompanyLabel}>
+            <TextInput lang={lang} value={exp.company} onChange={(e) => update(exp.id, { company: e.target.value })} />
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label={s.fromLabel} tip={s.dateTip}>
+              <TextInput lang={lang} value={exp.start} onChange={(e) => update(exp.id, { start: e.target.value })} />
+            </Field>
+            <Field label={s.toLabel} tip={s.dateTip}>
+              <TextInput
+                lang={lang}
+                placeholder={exp.current ? s.currentLabel : ""}
+                value={exp.current ? "" : exp.end}
+                disabled={exp.current}
+                onChange={(e) => update(exp.id, { end: e.target.value })}
+              />
+            </Field>
+          </div>
+          <label className="flex items-center gap-2 text-xs text-neutral-600 mb-4">
+            <input type="checkbox" checked={exp.current} onChange={(e) => update(exp.id, { current: e.target.checked })} />
+            {s.currentCheckbox}
+          </label>
+          <Field label={s.bulletsLabel} tip={s.bulletsTip}>
+            <TextArea lang={lang} rows={4} value={exp.bullets} onChange={(e) => update(exp.id, { bullets: e.target.value })} />
+          </Field>
+        </RemovableRow>
+      ))}
+      <AddButton onClick={add} label={s.addExperience} />
+    </SectionCard>
+  );
+}
+
+function StepEducation({ data, setData, s, lang }) {
+  const update = (id, patch) => setData({ ...data, education: data.education.map((x) => (x.id === id ? { ...x, ...patch } : x)) });
+  const add = () => setData({ ...data, education: [...data.education, emptyEducation()] });
+  const remove = (id) => setData({ ...data, education: data.education.filter((x) => x.id !== id) });
+
+  return (
+    <SectionCard title={s.educationTitle}>
+      {data.education.map((ed, i) => (
+        <RemovableRow key={ed.id} onRemove={() => remove(ed.id)} canRemove={data.education.length > 1}>
+          <Field label={s.degreeLabel} tip={s.degreeTip}>
+            <TextInput lang={lang} value={ed.degree} onChange={(e) => update(ed.id, { degree: e.target.value })} />
+          </Field>
+          <Field label={s.schoolLabel} tip={s.schoolTip}>
+            <TextInput lang={lang} value={ed.school} onChange={(e) => update(ed.id, { school: e.target.value })} />
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label={s.eduYearLabel} tip={s.eduYearTip}>
+              <TextInput lang={lang} value={ed.year} onChange={(e) => update(ed.id, { year: e.target.value })} />
+            </Field>
+            <Field label={s.eduNotesLabel}>
+              <TextInput lang={lang} value={ed.notes} onChange={(e) => update(ed.id, { notes: e.target.value })} />
+            </Field>
+          </div>
+        </RemovableRow>
+      ))}
+      <AddButton onClick={add} label={s.addEducation} />
+    </SectionCard>
+  );
+}
+
+function StepSkills({ data, setData, s, lang }) {
+  return (
+    <SectionCard title={s.skillsTitle}>
+      <Field label={s.skillsLabel} tip={s.skillsTip} required>
+        <TextArea lang={lang} rows={3} value={data.skills} onChange={(e) => setData({ ...data, skills: e.target.value })} />
+      </Field>
+      <Field label={s.languagesLabel} tip={s.languagesTip}>
+        <TextArea lang={lang} rows={2} value={data.languages} onChange={(e) => setData({ ...data, languages: e.target.value })} />
+      </Field>
+    </SectionCard>
+  );
+}
+
+function StepCourses({ data, setData, s, lang }) {
+  const update = (id, patch) => setData({ ...data, courses: data.courses.map((x) => (x.id === id ? { ...x, ...patch } : x)) });
+  const add = () => setData({ ...data, courses: [...data.courses, emptyCourse()] });
+  const remove = (id) => setData({ ...data, courses: data.courses.filter((x) => x.id !== id) });
+
+  return (
+    <SectionCard title={s.coursesTitle} subtitle={s.coursesSubtitle}>
+      {data.courses.map((c, i) => (
+        <RemovableRow key={c.id} onRemove={() => remove(c.id)} canRemove={data.courses.length > 1}>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label={s.courseNameLabel}>
+              <TextInput lang={lang} value={c.name} onChange={(e) => update(c.id, { name: e.target.value })} />
+            </Field>
+            <Field label={s.courseOrgLabel}>
+              <TextInput lang={lang} value={c.org} onChange={(e) => update(c.id, { org: e.target.value })} />
+            </Field>
+            <Field label={s.courseYearLabel}>
+              <TextInput lang={lang} value={c.year} onChange={(e) => update(c.id, { year: e.target.value })} />
+            </Field>
+          </div>
+        </RemovableRow>
+      ))}
+      <AddButton onClick={add} label={s.addCourse} />
+    </SectionCard>
+  );
+}
+
+function StepCertifications({ data, setData, s, lang }) {
+  const update = (id, patch) => setData({ ...data, certifications: data.certifications.map((x) => (x.id === id ? { ...x, ...patch } : x)) });
+  const add = () => setData({ ...data, certifications: [...data.certifications, emptyCertification()] });
+  const remove = (id) => setData({ ...data, certifications: data.certifications.filter((x) => x.id !== id) });
+
+  return (
+    <SectionCard title={s.certificationsTitle} subtitle={s.certificationsSubtitle}>
+      {data.certifications.map((c) => (
+        <RemovableRow key={c.id} onRemove={() => remove(c.id)} canRemove={data.certifications.length > 1}>
+          <Field label={s.certificationNameLabel}>
+            <TextInput lang={lang} value={c.name} onChange={(e) => update(c.id, { name: e.target.value })} />
+          </Field>
+          <Field label={s.certificationOrgLabel}>
+            <TextInput lang={lang} value={c.org} onChange={(e) => update(c.id, { org: e.target.value })} />
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label={s.certificationNumberLabel}>
+              <TextInput lang={lang} value={c.number} onChange={(e) => update(c.id, { number: e.target.value })} />
+            </Field>
+            <Field label={s.certificationYearLabel}>
+              <TextInput lang={lang} value={c.year} onChange={(e) => update(c.id, { year: e.target.value })} />
+            </Field>
+          </div>
+        </RemovableRow>
+      ))}
+      <AddButton onClick={add} label={s.addCertification} />
+    </SectionCard>
+  );
+}
+
+function StepProjects({ data, setData, s, lang }) {
+  const update = (id, patch) => setData({ ...data, projects: data.projects.map((x) => (x.id === id ? { ...x, ...patch } : x)) });
+  const add = () => setData({ ...data, projects: [...data.projects, emptyProject()] });
+  const remove = (id) => setData({ ...data, projects: data.projects.filter((x) => x.id !== id) });
+
+  return (
+    <SectionCard title={s.projectsTitle} subtitle={s.projectsSubtitle}>
+      {data.projects.map((p, i) => (
+        <RemovableRow key={p.id} onRemove={() => remove(p.id)} canRemove={data.projects.length > 1}>
+          <Field label={s.projectNameLabel}>
+            <TextInput lang={lang} value={p.name} onChange={(e) => update(p.id, { name: e.target.value })} />
+          </Field>
+          <Field label={s.projectDescLabel}>
+            <TextArea lang={lang} rows={2} value={p.desc} onChange={(e) => update(p.id, { desc: e.target.value })} />
+          </Field>
+        </RemovableRow>
+      ))}
+      <AddButton onClick={add} label={s.addProject} />
+    </SectionCard>
+  );
+}
+
+function StepAchievements({ data, setData, s, lang }) {
+  return (
+    <SectionCard title={s.achievementsTitle} subtitle={s.achievementsSubtitle}>
+      <Field label={s.achievementsLabel}>
+        <TextArea lang={lang} rows={3} value={data.achievements} onChange={(e) => setData({ ...data, achievements: e.target.value })} />
+      </Field>
+    </SectionCard>
+  );
+}
+
+function StepExtra({ data, setData, s, lang }) {
+  return (
+    <SectionCard title={s.extraTitle} subtitle={s.extraSubtitle}>
+      <Field label={s.beneficiaryQuestion} required>
+        <div className="flex gap-3">
+          {[
+            { id: "yes", label: s.beneficiaryYes },
+            { id: "no", label: s.beneficiaryNo },
+          ].map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => setData({ ...data, isBeneficiary: opt.id })}
+              className={`flex-1 text-sm font-semibold border rounded-md py-2 transition ${
+                data.isBeneficiary === opt.id ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-300 hover:border-neutral-500"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      <Field label={s.referralQuestion} required>
+        <div className="grid grid-cols-1 gap-2">
+          {s.referralOptions.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => setData({ ...data, referralSource: opt.id })}
+              className={`text-start text-sm border rounded-md px-3 py-2 transition ${
+                data.referralSource === opt.id ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-300 hover:border-neutral-500"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        {data.referralSource === "other" && (
+          <div className="mt-3">
+            <TextInput
+              lang={lang}
+              value={data.referralOther}
+              onChange={(e) => setData({ ...data, referralOther: e.target.value })}
+              placeholder={s.referralOtherLabel}
+            />
+          </div>
+        )}
+      </Field>
+    </SectionCard>
+  );
+}
+
+// ---------- Preview / Resume Render ----------
+
+function ResumePreview({ data, printRef, s, dir }) {
+  const exps = data.experiences.filter((e) => e.title || e.company);
+  const edus = data.education.filter((e) => e.degree || e.school);
+  const courses = data.courses.filter((c) => c.name);
+  const certifications = data.certifications.filter((c) => c.name);
+  const projects = data.projects.filter((p) => p.name);
+
+  return (
+    <div
+      ref={printRef}
+      id="resume-print-area"
+      className="bg-white text-black"
+      dir={dir}
+      style={{ fontFamily: "'Noto Sans Arabic', 'Arial', sans-serif" }}
+    >
+      <div className="max-w-[800px] mx-auto p-10">
+        <div className="border-b-2 border-black pb-4 mb-6">
+          <h1 className="text-3xl font-bold">{data.fullName || s.r_namePlaceholder}</h1>
+          <p className="text-lg mt-1">{data.jobTitle || s.r_titlePlaceholder}</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-sm">
+            {data.phone && (
+              <span>
+                {s.r_phoneLabel}: <span dir="ltr">{data.phone}</span>
+              </span>
+            )}
+            {data.email && (
+              <span>
+                {s.r_emailLabel}: <span dir="ltr">{data.email}</span>
+              </span>
+            )}
+            {data.city && (
+              <span>
+                {s.r_cityLabel}: {data.city}
+              </span>
+            )}
+            {data.linkedin && (
+              <span dir="ltr">
+                {s.r_linkedinLabel}:{" "}
+                <a
+                  href={/^https?:\/\//.test(data.linkedin) ? data.linkedin : `https://${data.linkedin}`}
+                  className="underline"
+                >
+                  {data.linkedin}
+                </a>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {data.summary && (
+          <Section title={data.status === "graduate" ? s.r_summaryGraduate : s.r_summary}>
+            <p className="text-sm leading-relaxed whitespace-pre-line">{data.summary}</p>
+          </Section>
+        )}
+
+        {exps.length > 0 && (
+          <Section title={s.r_experience}>
+            {exps.map((exp) => (
+              <div key={exp.id} className="mb-4">
+                <div className="flex justify-between items-baseline">
+                  <span className="font-bold text-sm">
+                    {exp.title}
+                    {exp.company ? ` — ${exp.company}` : ""}
+                  </span>
+                  <span className="text-xs text-neutral-600 whitespace-nowrap">
+                    {exp.start}
+                    {exp.start || exp.end || exp.current ? " - " : ""}
+                    {exp.current ? s.currentLabel : exp.end}
+                  </span>
+                </div>
+                {exp.bullets && (
+                  <ul className="list-disc ms-5 mt-1 text-sm leading-relaxed">
+                    {exp.bullets
+                      .split("\n")
+                      .filter(Boolean)
+                      .map((b, idx) => (
+                        <li key={idx}>{b.replace(/^-\s*/, "")}</li>
+                      ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </Section>
+        )}
+
+        {edus.length > 0 && (
+          <Section title={s.r_education}>
+            {edus.map((ed) => (
+              <div key={ed.id} className="mb-3 flex justify-between items-baseline">
+                <span className="text-sm">
+                  <span className="font-bold">{ed.degree}</span>
+                  {ed.school ? ` — ${ed.school}` : ""}
+                  {ed.notes ? ` (${ed.notes})` : ""}
+                </span>
+                <span className="text-xs text-neutral-600">{ed.year}</span>
+              </div>
+            ))}
+          </Section>
+        )}
+
+        {data.skills && (
+          <Section title={s.r_skills}>
+            <p className="text-sm leading-relaxed">{data.skills}</p>
+          </Section>
+        )}
+
+        {data.languages && (
+          <Section title={s.r_languages}>
+            <p className="text-sm leading-relaxed">{data.languages}</p>
+          </Section>
+        )}
+
+        {courses.length > 0 && (
+          <Section title={s.r_courses}>
+            {courses.map((c) => (
+              <div key={c.id} className="mb-2 flex justify-between items-baseline text-sm">
+                <span>
+                  {c.name}
+                  {c.org ? ` — ${c.org}` : ""}
+                </span>
+                <span className="text-xs text-neutral-600">{c.year}</span>
+              </div>
+            ))}
+          </Section>
+        )}
+
+        {certifications.length > 0 && (
+          <Section title={s.r_certifications}>
+            {certifications.map((c) => (
+              <div key={c.id} className="mb-2 flex justify-between items-baseline text-sm">
+                <span>
+                  {c.name}
+                  {c.org ? ` — ${c.org}` : ""}
+                  {c.number ? ` (${c.number})` : ""}
+                </span>
+                <span className="text-xs text-neutral-600">{c.year}</span>
+              </div>
+            ))}
+          </Section>
+        )}
+
+        {projects.length > 0 && (
+          <Section title={s.r_projects}>
+            {projects.map((p) => (
+              <div key={p.id} className="mb-3">
+                <span className="font-bold text-sm">{p.name}</span>
+                {p.desc && <p className="text-sm leading-relaxed">{p.desc}</p>}
+              </div>
+            ))}
+          </Section>
+        )}
+
+        {data.achievements && (
+          <Section title={s.r_achievements}>
+            <p className="text-sm leading-relaxed whitespace-pre-line">{data.achievements}</p>
+          </Section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Section({ title, children }) {
+  return (
+    <div className="mb-5">
+      <h3 className="text-sm font-bold uppercase tracking-wide border-b border-neutral-400 pb-1 mb-2">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+// ---------- Language switcher ----------
+
+function LangSwitcher({ lang, setLang }) {
+  return (
+    <div className="flex gap-1 bg-neutral-100 rounded-md p-1 w-fit">
+      <button
+        type="button"
+        onClick={() => setLang("ar")}
+        className={`text-xs font-semibold px-3 py-1.5 rounded ${lang === "ar" ? "bg-white shadow text-neutral-900" : "text-neutral-500"}`}
+      >
+        العربية
+      </button>
+      <button
+        type="button"
+        onClick={() => setLang("en")}
+        className={`text-xs font-semibold px-3 py-1.5 rounded ${lang === "en" ? "bg-white shadow text-neutral-900" : "text-neutral-500"}`}
+      >
+        English
+      </button>
+    </div>
+  );
+}
+
+// ---------- Main App ----------
+
+const STEP_KEYS = ["status", "contact", "summary", "experience", "education", "skills", "courses", "certifications", "projects", "achievements", "extra"];
+
+function App() {
+  const [lang, setLang] = useState("ar");
+  const [data, setData] = useState(initialData());
+  const [stepIndex, setStepIndex] = useState(0);
+  const [showPreview, setShowPreview] = useState(false);
+  const printRef = useRef(null);
+
+  const s = STR[lang];
+  const dir = s.dir;
+  const step = STEP_KEYS[stepIndex];
+  const isLast = stepIndex === STEP_KEYS.length - 1;
+
+  const requiredOk = (st) => {
+    if (st === "status") return !!data.status;
+    if (st === "contact") return !!(data.fullName && data.jobTitle && data.email && isPhoneValid(data.phone));
+    if (st === "summary") return !!data.summary;
+    if (st === "skills") return !!data.skills;
+    if (st === "extra") {
+      if (!data.isBeneficiary || !data.referralSource) return false;
+      if (data.referralSource === "other" && !data.referralOther) return false;
+      return true;
+    }
+    return true;
+  };
+
+  const goNext = () => setStepIndex((i) => Math.min(i + 1, STEP_KEYS.length - 1));
+  const goBack = () => setStepIndex((i) => Math.max(i - 1, 0));
+
+  const handleNextClick = () => {
+    if (step === "contact") {
+      if (!data.fullName || !data.jobTitle || !data.email) {
+        window.alert(s.fillRequiredAlert);
+        return;
+      }
+      if (!isPhoneValid(data.phone)) {
+        window.alert(s.phoneError);
+        return;
+      }
+      goNext();
+      return;
+    }
+    if (!requiredOk(step)) {
+      window.alert(s.fillRequiredAlert);
+      return;
+    }
+    if (isLast) {
+      sendToSheet(data);
+      setShowPreview(true);
+    } else {
+      goNext();
+    }
+  };
+
+  if (showPreview) {
+    return (
+      <div className="min-h-screen bg-neutral-100 py-8 px-4" dir={dir}>
+        <style>{`
+          @media print {
+            body * { visibility: hidden; }
+            #resume-print-area, #resume-print-area * { visibility: visible; }
+            #resume-print-area { position: absolute; top: 0; left: 0; width: 100%; }
+            .no-print { display: none !important; }
+            @page { margin: 12mm; }
+          }
+        `}</style>
+        <div className="max-w-[900px] mx-auto">
+          <div className="flex justify-between items-center mb-4 no-print">
+            <button onClick={() => setShowPreview(false)} className="text-sm font-semibold text-neutral-700 hover:text-neutral-900">
+              {s.backToEdit}
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="bg-neutral-900 text-white text-sm font-semibold px-5 py-2.5 rounded-md hover:bg-neutral-700 transition"
+            >
+              {s.downloadPdf}
+            </button>
+          </div>
+          <p className="text-xs text-neutral-500 mb-3 no-print">{s.printHint}</p>
+          <div className="shadow-lg rounded-md overflow-hidden">
+            <ResumePreview data={data} printRef={printRef} s={s} dir={dir} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-neutral-50" dir={dir} style={{ fontFamily: "'Noto Sans Arabic', 'Arial', sans-serif" }}>
+      <div className="max-w-[640px] mx-auto px-4 py-8">
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-900">{s.appTitle}</h1>
+            <p className="text-sm text-neutral-500 mt-1">{s.appSubtitle}</p>
+          </div>
+          <LangSwitcher lang={lang} setLang={setLang} />
+        </div>
+
+        {data.status && (
+          <div className="flex gap-1 mb-8">
+            {STEP_KEYS.map((k, i) => (
+              <div key={k} className={`h-1 flex-1 rounded-full ${i <= stepIndex ? "bg-neutral-900" : "bg-neutral-200"}`} />
+            ))}
+          </div>
+        )}
+
+        <div className="bg-white border border-neutral-200 rounded-xl p-6">
+          {step === "status" && <StepStatus data={data} setData={setData} s={s} onNext={goNext} />}
+          {step === "contact" && <StepContact data={data} setData={setData} s={s} lang={lang} />}
+          {step === "summary" && <StepSummary data={data} setData={setData} s={s} lang={lang} />}
+          {step === "experience" && <StepExperience data={data} setData={setData} s={s} lang={lang} />}
+          {step === "education" && <StepEducation data={data} setData={setData} s={s} lang={lang} />}
+          {step === "skills" && <StepSkills data={data} setData={setData} s={s} lang={lang} />}
+          {step === "courses" && <StepCourses data={data} setData={setData} s={s} lang={lang} />}
+          {step === "certifications" && <StepCertifications data={data} setData={setData} s={s} lang={lang} />}
+          {step === "projects" && <StepProjects data={data} setData={setData} s={s} lang={lang} />}
+          {step === "achievements" && <StepAchievements data={data} setData={setData} s={s} lang={lang} />}
+          {step === "extra" && <StepExtra data={data} setData={setData} s={s} lang={lang} />}
+        </div>
+
+        {step !== "status" && (
+          <div className="flex justify-between mt-6">
+            <button onClick={goBack} className="text-sm font-semibold text-neutral-600 hover:text-neutral-900 px-3 py-2">
+              {s.back}
+            </button>
+            <button
+              onClick={handleNextClick}
+              className="bg-neutral-900 text-white text-sm font-semibold px-6 py-2.5 rounded-md hover:bg-neutral-700 transition"
+            >
+              {isLast ? s.preview : s.next}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+<script>
+  var sourceCode = document.getElementById('app-source').textContent;
+  var compiled = Babel.transform(sourceCode, {
+    presets: [["react", { runtime: "classic" }]]
+  }).code;
+  (new Function(compiled))();
+</script>
+</body>
+</html>
