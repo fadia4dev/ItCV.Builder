@@ -4,13 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>بناء السيرة الذاتية / CV Builder</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
-  body { font-family: 'Noto Sans Arabic', 'Arial', sans-serif; }
+  body { font-family: Arial, sans-serif; }
 </style>
 </head>
 <body>
@@ -774,7 +773,7 @@ function ResumePreview({ data, printRef, s, dir }) {
       id="resume-print-area"
       className="bg-white text-black"
       dir={dir}
-      style={{ fontFamily: "'Noto Sans Arabic', 'Arial', sans-serif" }}
+      style={{ fontFamily: "Arial, sans-serif" }}
     >
       <div className="max-w-[800px] mx-auto p-10">
         <div className="border-b-2 border-black pb-4 mb-6">
@@ -1046,7 +1045,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50" dir={dir} style={{ fontFamily: "'Noto Sans Arabic', 'Arial', sans-serif" }}>
+    <div className="min-h-screen bg-neutral-50" dir={dir} style={{ fontFamily: "Arial, sans-serif" }}>
       <div className="max-w-[640px] mx-auto px-4 py-8">
         <div className="flex justify-between items-start mb-6">
           <div>
