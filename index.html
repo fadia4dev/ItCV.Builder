@@ -816,6 +816,28 @@ async function buildDocxBlob(data, s, dir) {
   const align = isRtl ? AlignmentType.RIGHT : AlignmentType.LEFT;
   const children = [];
 
+  // إصلاح رقم 1 و2 و3: عزل أي مقطع لاتيني/رقمي (إنجليزي، أرقام، تواريخ، نسب مئوية)
+  // بعلامات اتجاه Unicode (LRI...PDI) حتى لا يُعيد Word ترتيبه بصرياً وسط نص عربي.
+  const isolateBidi = (text) => {
+    if (!text) return text;
+    return String(text).replace(
+      /[A-Za-z0-9(][A-Za-z0-9 ./,%()&@+:_-]*[A-Za-z0-9%)]|[A-Za-z0-9]/g,
+      (m) => `\u2066${m}\u2069`
+    );
+  };
+
+  // إصلاح رقم 4: أي نص يحتوي على أسطر متعددة (\n) يُقسَّم إلى أسطر فعلية داخل
+  // نفس الفقرة عبر فواصل أسطر حقيقية (break)، بدل دمجها في سطر واحد متلاصق.
+  const buildRuns = (text, opts = {}) => {
+    const lines = String(text).split("\n");
+    const runs = [];
+    lines.forEach((line, idx) => {
+      if (idx > 0) runs.push(new TextRun({ break: 1, rightToLeft: isRtl }));
+      runs.push(new TextRun({ text: isolateBidi(line), size: 20, rightToLeft: isRtl, ...opts }));
+    });
+    return runs;
+  };
+
   const heading = (text) => {
     children.push(
       new Paragraph({
@@ -823,7 +845,7 @@ async function buildDocxBlob(data, s, dir) {
         alignment: align,
         spacing: { before: 240, after: 100 },
         border: { bottom: { color: "999999", space: 2, style: BorderStyle.SINGLE, size: 6 } },
-        children: [new TextRun({ text, bold: true, size: 22 })],
+        children: [new TextRun({ text, bold: true, size: 22, rightToLeft: isRtl })],
       })
     );
   };
@@ -835,7 +857,7 @@ async function buildDocxBlob(data, s, dir) {
         bidirectional: isRtl,
         alignment: align,
         spacing: { after: 80 },
-        children: [new TextRun({ text, size: 20, ...opts })],
+        children: buildRuns(text, opts),
       })
     );
   };
@@ -847,7 +869,7 @@ async function buildDocxBlob(data, s, dir) {
         bidirectional: isRtl,
         alignment: align,
         bullet: { level: 0 },
-        children: [new TextRun({ text, size: 20 })],
+        children: buildRuns(text),
       })
     );
   };
@@ -858,7 +880,14 @@ async function buildDocxBlob(data, s, dir) {
       bidirectional: isRtl,
       alignment: align,
       spacing: { after: 40 },
-      children: [new TextRun({ text: data.fullName || s.r_namePlaceholder, bold: true, size: 34 })],
+      children: [
+        new TextRun({
+          text: isolateBidi(data.fullName) || s.r_namePlaceholder,
+          bold: true,
+          size: 34,
+          rightToLeft: isRtl,
+        }),
+      ],
     })
   );
   children.push(
@@ -866,7 +895,13 @@ async function buildDocxBlob(data, s, dir) {
       bidirectional: isRtl,
       alignment: align,
       spacing: { after: 120 },
-      children: [new TextRun({ text: data.jobTitle || s.r_titlePlaceholder, size: 24 })],
+      children: [
+        new TextRun({
+          text: isolateBidi(data.jobTitle) || s.r_titlePlaceholder,
+          size: 24,
+          rightToLeft: isRtl,
+        }),
+      ],
     })
   );
 
@@ -883,7 +918,7 @@ async function buildDocxBlob(data, s, dir) {
         alignment: align,
         spacing: { after: 200 },
         border: { bottom: { color: "000000", space: 4, style: BorderStyle.SINGLE, size: 10 } },
-        children: [new TextRun({ text: contactParts.join("   |   "), size: 18 })],
+        children: [new TextRun({ text: isolateBidi(contactParts.join("   |   ")), size: 18, rightToLeft: isRtl })],
       })
     );
   }
