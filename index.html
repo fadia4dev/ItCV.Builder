@@ -8,6 +8,7 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
 <style>
   body { font-family: Arial, sans-serif; }
 </style>
@@ -24,11 +25,10 @@ const STR = {
   ar: {
     dir: "rtl",
     appTitle: "بناء السيرة الذاتية",
-    appSubtitle: "جمعية البر بجدة - أداة مبسطة لكتابة سيرة ذاتية احترافية",
+    appSubtitle: "أداة مجانية مبسطة لكتابة سيرة ذاتية احترافية بدون حفظ أي بيانات للمستخدمين",
     requiredTag: "(مطلوب)",
     statusHeading: "الحالة الوظيفية الحالية",
     statusSubtitle: "يُحدَّد ما ينطبق من الحالات التالية، ليتم تخصيص الأسئلة والإرشادات وفقًا لذلك.",
-    privacyNotice: "بتعبئة هذا النموذج، تُحفظ البيانات المُدخلة (كالاسم وبيانات التواصل) ضمن سجلات جمعية البر بجدة لأغراض المتابعة والتواصل مع المستفيدين. لا تُشارك هذه البيانات مع أي جهة خارج الجمعية.",
     statuses: [
       { id: "experienced", label: "صاحب خبرة", desc: "سنة عمل واحدة أو أكثر" },
       { id: "graduate", label: "خريج جديد", desc: "بدون خبرة عمل رسمية" },
@@ -38,6 +38,8 @@ const STR = {
     preview: "معاينة السيرة الذاتية",
     backToEdit: "← رجوع للتعديل",
     downloadPdf: "تحميل كـ PDF",
+    downloadWord: "تحميل كـ Word",
+    downloadWordPreparing: "جارٍ التحضير...",
     printHint: 'عند الضغط على "تحميل كـ PDF" ستفتح نافذة الطباعة — يُختار "حفظ كـ PDF" (Save as PDF) من قائمة الطابعة.',
 
     contactTitle: "البيانات الشخصية",
@@ -121,21 +123,6 @@ const STR = {
     achievementsSubtitle: "اختياري — إنجاز أو تكريم يستحق الذكر.",
     achievementsLabel: "وصف الإنجاز",
 
-    extraTitle: "سؤالان أخيران",
-    extraSubtitle: "هذان السؤالان لأغراض التنظيم الداخلي للجمعية فقط، ولن يظهرا في السيرة الذاتية.",
-    beneficiaryQuestion: "هل أنت من مستفيدي جمعية البر؟",
-    beneficiaryYes: "نعم",
-    beneficiaryNo: "لا",
-    referralQuestion: "من أين عرفت عن هذه الأداة / الرابط؟",
-    referralOptions: [
-      { id: "social", label: "منصات التواصل الاجتماعي" },
-      { id: "charity_staff", label: "عبر فريق عمل الجمعية مباشرة" },
-      { id: "friend", label: "توصية من صديق أو معارف" },
-      { id: "website", label: "الموقع الرسمي للجمعية" },
-      { id: "other", label: "أخرى" },
-    ],
-    referralOtherLabel: "يرجى التحديد",
-
     r_summary: "الملخص المهني",
     r_summaryGraduate: "الهدف الوظيفي",
     r_experience: "الخبرات العملية",
@@ -157,11 +144,10 @@ const STR = {
   en: {
     dir: "ltr",
     appTitle: "CV Builder",
-    appSubtitle: "Al-Birr Charitable Society, Jeddah - a simplified tool for writing a professional CV",
+    appSubtitle: "A free, simplified tool for writing a professional CV — no user data is ever saved",
     requiredTag: "(required)",
     statusHeading: "Current employment status",
     statusSubtitle: "Select what applies — the questions and guidance will adjust accordingly.",
-    privacyNotice: "By filling out this form, the information you enter (such as your name and contact details) is saved in the records of Al-Birr Charitable Society, Jeddah, for the purpose of following up and communicating with beneficiaries. This data is not shared with any party outside the charity.",
     statuses: [
       { id: "experienced", label: "Experienced", desc: "One year of work experience or more" },
       { id: "graduate", label: "Recent graduate", desc: "No formal work experience" },
@@ -171,6 +157,8 @@ const STR = {
     preview: "Preview CV",
     backToEdit: "← Back to edit",
     downloadPdf: "Download as PDF",
+    downloadWord: "Download as Word",
+    downloadWordPreparing: "Preparing...",
     printHint: 'Clicking "Download as PDF" opens the print dialog — choose "Save as PDF" from the printer list.',
 
     contactTitle: "Personal information",
@@ -254,21 +242,6 @@ const STR = {
     achievementsSubtitle: "Optional — an achievement or award worth mentioning.",
     achievementsLabel: "Achievement description",
 
-    extraTitle: "Two last questions",
-    extraSubtitle: "These two questions are for the charity's internal record-keeping only, and will not appear on the CV.",
-    beneficiaryQuestion: "Are you a beneficiary of Al-Birr Charitable Society?",
-    beneficiaryYes: "Yes",
-    beneficiaryNo: "No",
-    referralQuestion: "How did you hear about this tool / link?",
-    referralOptions: [
-      { id: "social", label: "Social media" },
-      { id: "charity_staff", label: "Directly from the charity's staff" },
-      { id: "friend", label: "Referral from a friend or acquaintance" },
-      { id: "website", label: "The charity's official website" },
-      { id: "other", label: "Other" },
-    ],
-    referralOtherLabel: "Please specify",
-
     r_summary: "Professional Summary",
     r_summaryGraduate: "Career Objective",
     r_experience: "Work Experience",
@@ -323,43 +296,10 @@ function initialData() {
     certifications: [emptyCertification()],
     projects: [emptyProject()],
     achievements: "",
-    isBeneficiary: "",
-    referralSource: "",
-    referralOther: "",
   };
 }
 
 const isPhoneValid = (phone) => /^\d{10,}$/.test(phone || "");
-
-// ---------- Google Sheet logging (optional) ----------
-// استبدلي القيمة أدناه برابط تطبيق الويب (Apps Script) الخاص بك بعد نشره — راجعي التعليمات المرفقة.
-// إن تُركت كما هي، لن يحاول التطبيق الإرسال، وستعمل الأداة بشكل طبيعي دون تسجيل أي بيانات.
-const SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyzhbqJoyHHb92RPNtexkuIquC4BMIl9XsEbru8GfdP-Tq9MxXYgktTCyMYPM07i_8h/exec";
-
-function sendToSheet(data) {
-  if (!SHEET_WEBHOOK_URL || SHEET_WEBHOOK_URL.indexOf("PASTE_") === 0) return;
-  try {
-    fetch(SHEET_WEBHOOK_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({
-        timestamp: new Date().toISOString(),
-        fullName: data.fullName,
-        phone: data.phone,
-        email: data.email,
-        city: data.city,
-        status: data.status,
-        jobTitle: data.jobTitle,
-        specialization: (data.education && data.education[0] && data.education[0].degree) || "",
-        isBeneficiary: data.isBeneficiary,
-        referralSource: data.referralSource === "other" ? data.referralOther : data.referralSource,
-      }),
-    }).catch(function () {});
-  } catch (e) {
-    // لا يُوقف هذا أبدًا تحميل السيرة الذاتية للمستخدم، حتى لو فشل الإرسال
-  }
-}
 
 // ---------- Small UI atoms ----------
 
@@ -443,9 +383,6 @@ function AddButton({ onClick, label }) {
 function StepStatus({ data, setData, s, onNext }) {
   return (
     <div>
-      <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-3 mb-5">
-        <p className="text-xs leading-relaxed text-neutral-600">{s.privacyNotice}</p>
-      </div>
       <h2 className="text-xl font-bold text-neutral-900 mb-2">{s.statusHeading}</h2>
       <p className="text-sm text-neutral-500 mb-6">{s.statusSubtitle}</p>
       <div className="grid grid-cols-1 gap-3">
@@ -705,59 +642,6 @@ function StepAchievements({ data, setData, s, lang }) {
   );
 }
 
-function StepExtra({ data, setData, s, lang }) {
-  return (
-    <SectionCard title={s.extraTitle} subtitle={s.extraSubtitle}>
-      <Field label={s.beneficiaryQuestion} required>
-        <div className="flex gap-3">
-          {[
-            { id: "yes", label: s.beneficiaryYes },
-            { id: "no", label: s.beneficiaryNo },
-          ].map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => setData({ ...data, isBeneficiary: opt.id })}
-              className={`flex-1 text-sm font-semibold border rounded-md py-2 transition ${
-                data.isBeneficiary === opt.id ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-300 hover:border-neutral-500"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </Field>
-
-      <Field label={s.referralQuestion} required>
-        <div className="grid grid-cols-1 gap-2">
-          {s.referralOptions.map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => setData({ ...data, referralSource: opt.id })}
-              className={`text-start text-sm border rounded-md px-3 py-2 transition ${
-                data.referralSource === opt.id ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-300 hover:border-neutral-500"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-        {data.referralSource === "other" && (
-          <div className="mt-3">
-            <TextInput
-              lang={lang}
-              value={data.referralOther}
-              onChange={(e) => setData({ ...data, referralOther: e.target.value })}
-              placeholder={s.referralOtherLabel}
-            />
-          </div>
-        )}
-      </Field>
-    </SectionCard>
-  );
-}
-
 // ---------- Preview / Resume Render ----------
 
 function ResumePreview({ data, printRef, s, dir }) {
@@ -922,6 +806,186 @@ function ResumePreview({ data, printRef, s, dir }) {
   );
 }
 
+// ---------- Word (.docx) generation ----------
+// يعمل بالكامل داخل متصفح المستخدم عبر مكتبة docx.js (CDN).
+// لا يوجد أي اتصال بأي خادم، ولا يُحفظ أي جزء من البيانات في أي مكان.
+
+async function buildDocxBlob(data, s, dir) {
+  const { Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle } = docx;
+  const isRtl = dir === "rtl";
+  const align = isRtl ? AlignmentType.RIGHT : AlignmentType.LEFT;
+  const children = [];
+
+  const heading = (text) => {
+    children.push(
+      new Paragraph({
+        bidirectional: isRtl,
+        alignment: align,
+        spacing: { before: 240, after: 100 },
+        border: { bottom: { color: "999999", space: 2, style: BorderStyle.SINGLE, size: 6 } },
+        children: [new TextRun({ text, bold: true, size: 22 })],
+      })
+    );
+  };
+
+  const para = (text, opts = {}) => {
+    if (!text) return;
+    children.push(
+      new Paragraph({
+        bidirectional: isRtl,
+        alignment: align,
+        spacing: { after: 80 },
+        children: [new TextRun({ text, size: 20, ...opts })],
+      })
+    );
+  };
+
+  const bullet = (text) => {
+    if (!text) return;
+    children.push(
+      new Paragraph({
+        bidirectional: isRtl,
+        alignment: align,
+        bullet: { level: 0 },
+        children: [new TextRun({ text, size: 20 })],
+      })
+    );
+  };
+
+  // Name + title
+  children.push(
+    new Paragraph({
+      bidirectional: isRtl,
+      alignment: align,
+      spacing: { after: 40 },
+      children: [new TextRun({ text: data.fullName || s.r_namePlaceholder, bold: true, size: 34 })],
+    })
+  );
+  children.push(
+    new Paragraph({
+      bidirectional: isRtl,
+      alignment: align,
+      spacing: { after: 120 },
+      children: [new TextRun({ text: data.jobTitle || s.r_titlePlaceholder, size: 24 })],
+    })
+  );
+
+  // Contact line
+  const contactParts = [];
+  if (data.phone) contactParts.push(`${s.r_phoneLabel}: ${data.phone}`);
+  if (data.email) contactParts.push(`${s.r_emailLabel}: ${data.email}`);
+  if (data.city) contactParts.push(`${s.r_cityLabel}: ${data.city}`);
+  if (data.linkedin) contactParts.push(`${s.r_linkedinLabel}: ${data.linkedin}`);
+  if (contactParts.length) {
+    children.push(
+      new Paragraph({
+        bidirectional: isRtl,
+        alignment: align,
+        spacing: { after: 200 },
+        border: { bottom: { color: "000000", space: 4, style: BorderStyle.SINGLE, size: 10 } },
+        children: [new TextRun({ text: contactParts.join("   |   "), size: 18 })],
+      })
+    );
+  }
+
+  // Summary
+  if (data.summary) {
+    heading(data.status === "graduate" ? s.r_summaryGraduate : s.r_summary);
+    para(data.summary);
+  }
+
+  // Experience
+  const exps = data.experiences.filter((e) => e.title || e.company);
+  if (exps.length) {
+    heading(s.r_experience);
+    exps.forEach((exp) => {
+      const dateRange = [exp.start, exp.current ? s.currentLabel : exp.end].filter(Boolean).join(" - ");
+      const titleLine = `${exp.title}${exp.company ? " — " + exp.company : ""}${dateRange ? "   (" + dateRange + ")" : ""}`;
+      para(titleLine, { bold: true });
+      if (exp.bullets) {
+        exp.bullets
+          .split("\n")
+          .filter(Boolean)
+          .forEach((b) => bullet(b.replace(/^-\s*/, "")));
+      }
+    });
+  }
+
+  // Education
+  const edus = data.education.filter((e) => e.degree || e.school);
+  if (edus.length) {
+    heading(s.r_education);
+    edus.forEach((ed) => {
+      const line = `${ed.degree}${ed.school ? " — " + ed.school : ""}${ed.notes ? " (" + ed.notes + ")" : ""}${ed.year ? "   " + ed.year : ""}`;
+      para(line);
+    });
+  }
+
+  // Skills / Languages
+  if (data.skills) {
+    heading(s.r_skills);
+    para(data.skills);
+  }
+  if (data.languages) {
+    heading(s.r_languages);
+    para(data.languages);
+  }
+
+  // Courses
+  const courses = data.courses.filter((c) => c.name);
+  if (courses.length) {
+    heading(s.r_courses);
+    courses.forEach((c) => para(`${c.name}${c.org ? " — " + c.org : ""}${c.year ? "   " + c.year : ""}`));
+  }
+
+  // Certifications
+  const certifications = data.certifications.filter((c) => c.name);
+  if (certifications.length) {
+    heading(s.r_certifications);
+    certifications.forEach((c) =>
+      para(`${c.name}${c.org ? " — " + c.org : ""}${c.number ? " (" + c.number + ")" : ""}${c.year ? "   " + c.year : ""}`)
+    );
+  }
+
+  // Projects
+  const projects = data.projects.filter((p) => p.name);
+  if (projects.length) {
+    heading(s.r_projects);
+    projects.forEach((p) => {
+      para(p.name, { bold: true });
+      para(p.desc);
+    });
+  }
+
+  // Achievements
+  if (data.achievements) {
+    heading(s.r_achievements);
+    para(data.achievements);
+  }
+
+  const doc = new Document({
+    sections: [
+      {
+        properties: {},
+        children,
+      },
+    ],
+  });
+
+  return await Packer.toBlob(doc);
+}
+
+function triggerBlobDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function Section({ title, children }) {
   return (
     <div className="mb-5">
@@ -956,14 +1020,26 @@ function LangSwitcher({ lang, setLang }) {
 
 // ---------- Main App ----------
 
-const STEP_KEYS = ["status", "contact", "summary", "experience", "education", "skills", "courses", "certifications", "projects", "achievements", "extra"];
+const STEP_KEYS = ["status", "contact", "summary", "experience", "education", "skills", "courses", "certifications", "projects", "achievements"];
 
 function App() {
   const [lang, setLang] = useState("ar");
   const [data, setData] = useState(initialData());
   const [stepIndex, setStepIndex] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
+  const [isGeneratingWord, setIsGeneratingWord] = useState(false);
   const printRef = useRef(null);
+
+  const handleDownloadWord = async () => {
+    setIsGeneratingWord(true);
+    try {
+      const blob = await buildDocxBlob(data, s, dir);
+      const safeName = (data.fullName || "CV").trim().replace(/[\\/:*?"<>|]/g, "");
+      triggerBlobDownload(blob, `${safeName}.docx`);
+    } finally {
+      setIsGeneratingWord(false);
+    }
+  };
 
   const s = STR[lang];
   const dir = s.dir;
@@ -975,11 +1051,6 @@ function App() {
     if (st === "contact") return !!(data.fullName && data.jobTitle && data.email && isPhoneValid(data.phone));
     if (st === "summary") return !!data.summary;
     if (st === "skills") return !!data.skills;
-    if (st === "extra") {
-      if (!data.isBeneficiary || !data.referralSource) return false;
-      if (data.referralSource === "other" && !data.referralOther) return false;
-      return true;
-    }
     return true;
   };
 
@@ -1004,7 +1075,6 @@ function App() {
       return;
     }
     if (isLast) {
-      sendToSheet(data);
       setShowPreview(true);
     } else {
       goNext();
@@ -1028,12 +1098,21 @@ function App() {
             <button onClick={() => setShowPreview(false)} className="text-sm font-semibold text-neutral-700 hover:text-neutral-900">
               {s.backToEdit}
             </button>
-            <button
-              onClick={() => window.print()}
-              className="bg-neutral-900 text-white text-sm font-semibold px-5 py-2.5 rounded-md hover:bg-neutral-700 transition"
-            >
-              {s.downloadPdf}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDownloadWord}
+                disabled={isGeneratingWord}
+                className="bg-white border border-neutral-900 text-neutral-900 text-sm font-semibold px-5 py-2.5 rounded-md hover:bg-neutral-100 transition disabled:opacity-60"
+              >
+                {isGeneratingWord ? s.downloadWordPreparing : s.downloadWord}
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="bg-neutral-900 text-white text-sm font-semibold px-5 py-2.5 rounded-md hover:bg-neutral-700 transition"
+              >
+                {s.downloadPdf}
+              </button>
+            </div>
           </div>
           <p className="text-xs text-neutral-500 mb-3 no-print">{s.printHint}</p>
           <div className="shadow-lg rounded-md overflow-hidden">
@@ -1074,7 +1153,6 @@ function App() {
           {step === "certifications" && <StepCertifications data={data} setData={setData} s={s} lang={lang} />}
           {step === "projects" && <StepProjects data={data} setData={setData} s={s} lang={lang} />}
           {step === "achievements" && <StepAchievements data={data} setData={setData} s={s} lang={lang} />}
-          {step === "extra" && <StepExtra data={data} setData={setData} s={s} lang={lang} />}
         </div>
 
         {step !== "status" && (
